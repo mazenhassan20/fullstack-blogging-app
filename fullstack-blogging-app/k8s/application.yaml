@@ -1,0 +1,90 @@
+# Service for Fullstack Blogging App
+apiVersion: v1
+kind: Service
+metadata:
+  name: blogging-app-service
+  namespace: blogging-app
+spec:
+  selector:
+    app: blogging-app
+  type: NodePort
+  ports:
+    - protocol: TCP
+      targetPort: 8080
+      port: 8080
+      nodePort: 30000
+---
+# Ingress for Fullstack Blogging App
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: blogging-app-ingress
+  namespace: blogging-app
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths: 
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: blogging-app-service
+              port:
+                number: 8080     
+---
+# Application Deployment for Fullstack Blogging App
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blogging-app-deployment
+  namespace: blogging-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels: 
+      app: blogging-app
+  template:
+    metadata:
+      labels:
+        app: blogging-app
+    spec:
+      containers:
+        - name: blogging-app
+          image: mhmdocker1/fullstack-blogging-app:v1.1
+          ports:
+            - containerPort: 8080 
+          envFrom:
+            - configMapRef:
+                name: mysqldb-config
+            - secretRef:
+                name: mysqldb-secret
+            - configMapRef:
+                name: postgresdb-config
+            - secretRef:
+                name: postgresdb-secret
+          resources:
+            limits:
+              memory: 500Mi
+              cpu: 200m
+            requests:
+              memory: 250Mi
+              cpu: 100m
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          
+  

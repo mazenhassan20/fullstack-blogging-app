@@ -1,0 +1,13 @@
+# blogging-app namespace
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: blogging-app  
+---
+# monitoring namespace
+
+apiVersion: v1
+kind: Namespace
+metadata: 
+  name: monitoring

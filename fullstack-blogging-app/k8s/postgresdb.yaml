@@ -1,0 +1,121 @@
+# Postgres ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgresdb-config
+  namespace: blogging-app
+data:
+  POSTGRES_HOST: postgresdb-service
+  POSTGRES_USER: blogging
+  POSTGRES_DB: postgresdb
+  POSTGRES_PORT: "5432"
+---
+# Postgres Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgresdb-secret
+  namespace: blogging-app
+type: Opaque
+stringData:
+  POSTGRES_ROOT_USER: root
+  POSTGRES_ROOT_PASSWORD: blogging-app
+  POSTGRES_PASSWORD: blogging-app
+
+---
+# postgres Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresdb-svc
+  namespace: blogging-app
+spec:
+  selector:
+    app: postgresdb
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+      
+---
+# Postgres Headless Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresdb-hsvc
+  namespace: blogging-app
+spec:
+  selector:
+    app: postgresdb
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+
+---
+# Postgres StatefulSet 
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgresdb
+  namespace: blogging-app
+spec:
+  serviceName: postgresdb-hsvc
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgresdb
+  template:
+    metadata:
+      labels:
+        app: postgresdb
+    spec:
+      containers:
+      - name: postgresdb
+        image: postgres:14.19-alpine3.21
+        ports:
+        - containerPort: 5432
+          name: postgres
+        envFrom:
+          - configMapRef:
+              name: postgresdb-config
+          - secretRef:
+              name: postgresdb-secret
+        resources:
+            limits:
+              memory: 500Mi
+              cpu: 200m
+            requests:
+              memory: 250Mi
+              cpu: 100m
+        livenessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", "blogging"]   # Use the POSTGRES_USER from ConfigMap
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+        volumeMounts:
+          - name: postgresdb-storage
+            mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+  - metadata:
+      name: postgresdb-storage
+    spec:
+      storageClassName: local-path
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 2Gi
+ 

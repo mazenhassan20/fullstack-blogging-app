@@ -1,0 +1,33 @@
+
+# ClusterRole to allow read-only access to pods, services, and nodes
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: monitorer-cluster
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "nodes"]
+    verbs: ["get", "list", "watch"]
+---
+# ServiceAccount to be used by the monitoring application
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: monitoring-sa
+  namespace: monitoring
+automountServiceAccountToken: false
+---
+# ClusterRoleBinding to bind the Role to a ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: monitorer-cluster-binding
+subjects:
+  - kind: ServiceAccount
+    name: monitoring-sa
+    namespace: monitoring
+    apiGroup: ""
+roleRef:
+  kind: ClusterRole
+  name: monitorer-cluster
+  apiGroup: rbac.authorization.k8s.io

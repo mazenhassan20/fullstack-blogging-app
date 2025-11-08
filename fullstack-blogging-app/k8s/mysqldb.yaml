@@ -1,0 +1,121 @@
+# MySQL ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysqldb-config
+  namespace: blogging-app
+data:
+  MYSQL_HOST: mysqldb-service
+  MYSQL_USER: blogging
+  MYSQL_DATABASE: mysqldb 
+  MYSQL_PORT: "3306"
+---
+# MySQL Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysqldb-secret
+  namespace: blogging-app
+type: Opaque
+stringData:
+  MYSQL_ROOT_USER: root
+  MYSQL_ROOT_PASSWORD: blogging-app
+  MYSQL_PASSWORD: blogging-app
+
+---
+# MySQL Service
+# postgres Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysqldb-svc
+  namespace: blogging-app
+spec:
+  selector:
+    app: mysqldb
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+---
+# MySQL Headless Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysqldb-hsvc
+  namespace: blogging-app
+spec:
+  selector:
+    app: mysqldb
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+
+---
+# MySQL StatefulSet 
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysqldb
+  namespace: blogging-app
+spec:
+  serviceName: mysqldb-hsvc
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysqldb
+  template:
+    metadata:
+      labels:
+        app: mysqldb
+    spec:
+      containers:
+      - name: mysqldb
+        image: mysql:8.4
+        ports:
+        - containerPort: 3306
+          name: mysql
+        envFrom:
+          - configMapRef:
+              name: mysqldb-config
+          - secretRef:
+              name: mysqldb-secret
+        resources:
+            limits:
+              memory: 500Mi
+              cpu: 200m
+            requests:
+              memory: 250Mi
+              cpu: 100m
+        livenessProbe:
+            tcpSocket:
+              port: 3306
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+        readinessProbe:
+          exec:
+            command: ["mysqladmin", "ping", "-h", "127.0.0.1"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+        volumeMounts:
+          - name: mysqldb-storage
+            mountPath: /var/lib/mysql
+  volumeClaimTemplates:
+  - metadata:
+      name: mysqldb-storage
+    spec:
+      storageClassName: local-path
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 2Gi
+ 
