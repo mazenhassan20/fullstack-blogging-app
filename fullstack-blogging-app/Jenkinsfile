@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "mazenelsayad/bloggingapp"   
-        IMAGE_TAG = "v${BUILD_NUMBER}"                      
+        IMAGE_NAME = "mazenelsayad/bloggingapp"
+        IMAGE_TAG = "v${BUILD_NUMBER}"
         REGISTRY = "docker.io"
     }
 
@@ -18,37 +18,43 @@ pipeline {
 
         stage("Build Maven") {
             steps {
-                sh "./mvnw clean package -DskipTests"
+                dir('fullstack-blogging-app') { // انتقل لمجلد المشروع
+                    sh "./mvnw clean package -DskipTests"
+                }
             }
             post {
-              always {
-                archiveArtifacts artifacts: 'target/*.jar', allowEmptyArchive: true
-              }
+                always {
+                    archiveArtifacts artifacts: 'fullstack-blogging-app/target/*.jar', allowEmptyArchive: true
+                }
             }
         }
 
         stage("Build Docker Image") {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'DOCKERHUB_CREDENTIALS',
-                    usernameVariable: 'USER',
-                    passwordVariable: 'PASS'
-                )]) {
-                    sh """
-                        echo "$PASS" | docker login -u "$USER" --password-stdin
-                        docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                    """
+                dir('fullstack-blogging-app') {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'DOCKERHUB_CREDENTIALS',
+                        usernameVariable: 'USER',
+                        passwordVariable: 'PASS'
+                    )]) {
+                        sh """
+                            echo "$PASS" | docker login -u "$USER" --password-stdin
+                            docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                            docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                        """
+                    }
                 }
             }
         }
 
         stage("Update Kubernetes Manifest") {
             steps {
-                sh """
-                sed -i "s|image: .*|image: ${IMAGE_NAME}:${IMAGE_TAG}|g" k8s/application.yaml
-                cat k8s/application.yaml | grep image -n
-                """
+                dir('fullstack-blogging-app/k8s') {
+                    sh """
+                    sed -i "s|image: .*|image: ${IMAGE_NAME}:${IMAGE_TAG}|g" application.yaml
+                    cat application.yaml | grep image -n
+                    """
+                }
             }
         }
 
@@ -56,13 +62,13 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'K8S_CONFIG', variable: 'KUBECONFIG_CONTENT')]) {
                     sh '''
-                        # نحفظ محتوى Secret Text مؤقتًا في ملف
+                        # احفظ محتوى Secret Text مؤقتًا في ملف
                         echo "$KUBECONFIG_CONTENT" > kubeconfig_temp
                         export KUBECONFIG=$(pwd)/kubeconfig_temp
 
                         # نطبّق ملفات YAML على cluster
-                        kubectl apply -f k8s/namespace.yaml
-                        kubectl apply -f k8s/
+                        kubectl apply -f fullstack-blogging-app/k8s/namespace.yaml
+                        kubectl apply -f fullstack-blogging-app/k8s/
                     '''
                 }
             }
@@ -78,4 +84,3 @@ pipeline {
         }
     }
 }
-
