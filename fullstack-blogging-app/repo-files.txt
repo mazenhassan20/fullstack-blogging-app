@@ -1,0 +1,16 @@
+./pom.xml
+./notes.md
+./repo-files.txt
+./.env
+./Dockerfile
+./.dockerignore
+./k8s/mysqldb.yaml
+./k8s/postgresdb.yaml
+./k8s/namespace.yaml
+./k8s/grafana.yaml
+./k8s/kustomization.yaml
+./k8s/roles.yaml
+./k8s/prometheus.yaml
+./k8s/application.yaml
+./mvnw.cmd
+./mvnw

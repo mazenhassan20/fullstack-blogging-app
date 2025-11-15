@@ -1,0 +1,13 @@
+/fullstack-blogging-app/fullstack-blogging-app/src/main/java/com/example/twitterapp/TwitterAppApplication.java
+/fullstack-blogging-app/fullstack-blogging-app/src/main/java/com/example/twitterapp/config/CustomUserDetails.java
+/fullstack-blogging-app/fullstack-blogging-app/src/main/java/com/example/twitterapp/config/CustomUserDetailsService.java
+/fullstack-blogging-app/fullstack-blogging-app/src/main/java/com/example/twitterapp/config/SecurityConfig.java
+/fullstack-blogging-app/fullstack-blogging-app/src/main/java/com/example/twitterapp/controller/PostController.java
+/fullstack-blogging-app/fullstack-blogging-app/src/main/java/com/example/twitterapp/controller/UserController.java
+/fullstack-blogging-app/fullstack-blogging-app/src/main/java/com/example/twitterapp/model/Post.java
+/fullstack-blogging-app/fullstack-blogging-app/src/main/java/com/example/twitterapp/model/User.java
+/fullstack-blogging-app/fullstack-blogging-app/src/main/java/com/example/twitterapp/repository/PostRepository.java
+/fullstack-blogging-app/fullstack-blogging-app/src/main/java/com/example/twitterapp/repository/UserRepository.java
+/fullstack-blogging-app/fullstack-blogging-app/src/main/java/com/example/twitterapp/service/PostService.java
+/fullstack-blogging-app/fullstack-blogging-app/src/main/java/com/example/twitterapp/service/UserService.java
+/fullstack-blogging-app/fullstack-blogging-app/src/main/java/com/example/twitterapp/service/UserServiceImpl.java
