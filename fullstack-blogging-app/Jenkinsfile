@@ -2,9 +2,10 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "mazenelsayad/bloggingapp";
-        IMAGE_TAG = "v${BUILD_NUMBER}";
-        REGISTRY = "docker.io";
+        IMAGE_NAME = "mazenelsayad/bloggingapp"
+        IMAGE_TAG = "v${BUILD_NUMBER}"
+        REGISTRY = "docker.io"
+        KUBECONFIG_FILE = "/home/mazen/.kube/config" // استخدم المسار الصحيح عندك
     }
 
     stages {
@@ -60,14 +61,11 @@ pipeline {
 
         stage("Deploy to Kubernetes") {
             steps {
-                withCredentials([file(credentialsId: 'K8S_CONFIG', variable: 'KUBECONFIG_FILE')]) {
-                    sh '''
-                        echo "Using kubeconfig from: $KUBECONFIG_FILE"
-
-                        kubectl --kubeconfig=$KUBECONFIG_FILE apply -f fullstack-blogging-app/k8s/namespace.yaml
-                        kubectl --kubeconfig=$KUBECONFIG_FILE apply -f fullstack-blogging-app/k8s/
-                    '''
-                }
+                sh """
+                    echo "Using kubeconfig from: $KUBECONFIG_FILE"
+                    kubectl --kubeconfig=$KUBECONFIG_FILE apply -f fullstack-blogging-app/k8s/namespace.yaml
+                    kubectl --kubeconfig=$KUBECONFIG_FILE apply -f fullstack-blogging-app/k8s/
+                """
             }
         }
     }
