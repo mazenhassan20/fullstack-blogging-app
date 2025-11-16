@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "mazenelsayad/bloggingapp"
-        IMAGE_TAG = "v${BUILD_NUMBER}"
-        REGISTRY = "docker.io"
+        IMAGE_NAME = "mazenelsayad/bloggingapp";
+        IMAGE_TAG = "v${BUILD_NUMBER}";
+        REGISTRY = "docker.io";
     }
 
     stages {
@@ -18,7 +18,7 @@ pipeline {
 
         stage("Build Maven") {
             steps {
-                dir('fullstack-blogging-app') { // انتقل لمجلد المشروع
+                dir('fullstack-blogging-app') {
                     sh "./mvnw clean package -DskipTests"
                 }
             }
@@ -51,8 +51,8 @@ pipeline {
             steps {
                 dir('fullstack-blogging-app/k8s') {
                     sh """
-                    sed -i "s|image: .*|image: ${IMAGE_NAME}:${IMAGE_TAG}|g" application.yaml
-                    cat application.yaml | grep image -n
+                        sed -i "s|image: .*|image: ${IMAGE_NAME}:${IMAGE_TAG}|g" application.yaml
+                        cat application.yaml | grep image -n
                     """
                 }
             }
@@ -62,13 +62,25 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'K8S_CONFIG', variable: 'KUBECONFIG_CONTENT')]) {
                     sh '''
-                        # احفظ محتوى Secret Text مؤقتًا في ملف
-                        echo "$KUBECONFIG_CONTENT" > kubeconfig_temp
-                        export KUBECONFIG=$(pwd)/kubeconfig_temp
+                        echo "Creating kubeconfig_temp..."
 
-                        # نطبّق ملفات YAML على cluster
-                        kubectl apply -f fullstack-blogging-app/k8s/namespace.yaml
-                        kubectl apply -f fullstack-blogging-app/k8s/
+                        # كتابة kubeconfig بطريقة سليمة بدون تكسير
+                        printf "%s" "$KUBECONFIG_CONTENT" > kubeconfig_temp
+                        chmod 600 kubeconfig_temp
+
+                        echo "---- First 30 lines of kubeconfig ----"
+                        head -n 30 kubeconfig_temp || true
+                        echo "----------------------------------------"
+
+                        echo "Validating kubeconfig…"
+                        kubectl --kubeconfig=kubeconfig_temp config view >/dev/null 2>&1 || {
+                            echo "ERROR: Invalid kubeconfig!"
+                            exit 1
+                        }
+
+                        echo "Applying Kubernetes manifests…"
+                        kubectl --kubeconfig=kubeconfig_temp apply -f fullstack-blogging-app/k8s/namespace.yaml
+                        kubectl --kubeconfig=kubeconfig_temp apply -f fullstack-blogging-app/k8s/
                     '''
                 }
             }
@@ -84,3 +96,4 @@ pipeline {
         }
     }
 }
+
