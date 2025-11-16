@@ -60,27 +60,12 @@ pipeline {
 
         stage("Deploy to Kubernetes") {
             steps {
-                withCredentials([string(credentialsId: 'K8S_CONFIG', variable: 'KUBECONFIG_CONTENT')]) {
+                withCredentials([file(credentialsId: 'K8S_CONFIG', variable: 'KUBECONFIG_FILE')]) {
                     sh '''
-                        echo "Creating kubeconfig_temp..."
+                        echo "Using kubeconfig from: $KUBECONFIG_FILE"
 
-                        # كتابة kubeconfig بطريقة سليمة بدون تكسير
-                        printf "%s" "$KUBECONFIG_CONTENT" > kubeconfig_temp
-                        chmod 600 kubeconfig_temp
-
-                        echo "---- First 30 lines of kubeconfig ----"
-                        head -n 30 kubeconfig_temp || true
-                        echo "----------------------------------------"
-
-                        echo "Validating kubeconfig…"
-                        kubectl --kubeconfig=kubeconfig_temp config view >/dev/null 2>&1 || {
-                            echo "ERROR: Invalid kubeconfig!"
-                            exit 1
-                        }
-
-                        echo "Applying Kubernetes manifests…"
-                        kubectl --kubeconfig=kubeconfig_temp apply -f fullstack-blogging-app/k8s/namespace.yaml
-                        kubectl --kubeconfig=kubeconfig_temp apply -f fullstack-blogging-app/k8s/
+                        kubectl --kubeconfig=$KUBECONFIG_FILE apply -f fullstack-blogging-app/k8s/namespace.yaml
+                        kubectl --kubeconfig=$KUBECONFIG_FILE apply -f fullstack-blogging-app/k8s/
                     '''
                 }
             }
@@ -96,4 +81,3 @@ pipeline {
         }
     }
 }
-
